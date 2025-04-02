@@ -1,0 +1,5 @@
+django
+Django>=3.2,<4.0
+djangorestframework>=3.12.0,<4.0
+django-cors-headers>=3.7.0,<4.0
+gunicorn>=20.0.4,<21.0    # For deployment purposes
