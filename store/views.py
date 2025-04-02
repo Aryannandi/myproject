@@ -3,6 +3,11 @@ from .models import Product
 from category.models import category
 from django.http import HttpResponse
 from django.db.models import Q
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+import http.client
+import requests
+import json
+import urllib.parse
 # Create your views here.
 
 
@@ -17,7 +22,6 @@ def store(request, category_slug=None):
     else:
         products = Product.objects.all().filter(is_available=True)
         product_count = products.count()
-    
     context = {
         'products': products,
         'product_count': product_count,
@@ -26,142 +30,77 @@ def store(request, category_slug=None):
     return render(request, 'store/store.html',context)
 
 
+import requests
+from django.shortcuts import render, get_object_or_404
+from django.http import Http404
+
 def product_detail(request, category_slug, product_slug):
-    single_product = get_object_or_404(Product, category__slug=category_slug, slug=product_slug)
-    
+   
+    single_product = Product.objects.get(category__slug=category_slug, slug=product_slug)
+      
+   
+   
     context = {
         'single_product': single_product,
+       
     }
     return render(request, 'store/product_detail.html', context)
+# def product_detail(request, product_name, asin):
+#     # Ensure you're using the parameters correctly
+#     try:
+#         local_product = get_object_or_404(Product, slug=product_name, asin=asin)
 
+#         # Mock API connection or additional logic
+#         product_title = local_product.product_name
+#         product_price = local_product.price
+#         product_description = local_product.description
+
+#         context = {
+#             'product_title': product_title,
+#             'product_price': product_price,
+#      
 
 def search(request):
     if 'keyword' in request.GET:
-        keyword = request.GET['keyword']
+        keyword = request.GET.get('keyword','').strip()
+
         if keyword:
-            products = Product.objects.order_by('-created').filter(Q(description__icontains=keyword )| Q(product_name__icontains=keyword) )
-            product_count = products.count()
-    context = {
-                'products': products,
-                'product_count': product_count,
-            }
+            local_products = Product.objects.order_by('-created').filter(Q(description__icontains=keyword )| Q(product_name__icontains=keyword) )
+            product_count = local_products.count()
 
-
-    return render(request, 'store/store.html',context)
-
-
-
-# # !pip install requests
-
-# # !pip install beautifulsoup4
-# from bs4 import BeautifulSoup
-# import requests
-# headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36'}
-# flipkart=''
-# amazon=''
-# def flipkart(name):
-#     try:
-#         global flipkart
-#         name1 = name.replace(" ","+")
-#         flipkart=f'https://www.flipkart.com/search?q={name1}&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=off&as=off'
-#         res = requests.get(f'https://www.flipkart.com/search?q={name1}&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=off&as=off',headers=headers)
-
-
-#         print("\nSearching in flipkart....")
-#         soup = BeautifulSoup(res.text,'html.parser')
+        conn = http.client.HTTPSConnection("google-search-master.p.rapidapi.com")
+        # 'x-rapidapi-key': "7debb7ebcamsh697fec96085fa39p1af17djsn93536afedd97",
+        headers = {
+           'x-rapidapi-key': "7314a7cb81msh911d0e5a0909807p1f9e5cjsn86b3d95ccd07",
+           'x-rapidapi-host': "google-search-master.p.rapidapi.com"
+        }
         
-#         if(soup.select('._4rR01T')):
-#             flipkart_name = soup.select('._4rR01T')[0].getText().strip().upper()
-#             if name.upper() in flipkart_name:
-#                 flipkart_price = soup.select('._30jeq3')[0].getText().strip()
-#                 flipkart_name = soup.select('._4rR01T')[0].getText().strip()
-#                 print("Flipkart:")
-#                 print(flipkart_name)
-#                 print(flipkart_price)
-#                 print("---------------------------------")
-                
-#         elif(soup.select('.s1Q9rs')):
-#             flipkart_name = soup.select('.s1Q9rs')[0].getText().strip()
-#             flipkart_name = flipkart_name.upper()
-#             if name.upper() in flipkart_name:
-#                 flipkart_price = soup.select('._30jeq3')[0].getText().strip()
-#                 flipkart_name = soup.select('.s1Q9rs')[0].getText().strip()
-#                 print("Flipkart:")
-#                 print(flipkart_name)
-#                 print(flipkart_price)
-#                 print("---------------------------------")
-#         else:
-#             flipkart_price='0'
-            
-#         return flipkart_price 
-#     except:
-#         print("Flipkart: No product found!")  
-#         print("---------------------------------")
-#         flipkart_price= '0'
-#     return flipkart_price
+        encoded_query = urllib.parse.quote(keyword)
 
-# def amazon(name):
-#     try:
-#         global amazon
-#         name1 = name.replace(" ","-")
-#         name2 = name.replace(" ","+")
-#         amazon=f'https://www.amazon.in/{name1}/s?k={name2}'
-#         res = requests.get(f'https://www.amazon.in/{name1}/s?k={name2}',headers=headers)
-#         print("\nSearching in amazon...")
-#         soup = BeautifulSoup(res.text,'html.parser')
-#         amazon_page = soup.select('.a-color-base.a-text-normal')
-#         amazon_page_length = int(len(amazon_page))
-#         for i in range(0,amazon_page_length):
-#             name = name.upper()
-#             amazon_name = soup.select('.a-color-base.a-text-normal')[i].getText().strip().upper()
-#             if name in amazon_name:
-#                 amazon_name = soup.select('.a-color-base.a-text-normal')[i].getText().strip()
-#                 amazon_price = soup.select('.a-price-whole')[i].getText().strip().upper()
-#                 amazon_description = soup.select('.a-text-normal')[i].getText().strip()
-#                 amazon_image = soup.select('.s-image')[i]['src']
-#                 print("Amazon:")
-#                 print(amazon_name)
-#                 print("₹"+amazon_price)
-#                 print("---------------------------------")
-#                 break
-#             else:
-#                 i+=1
-#                 i=int(i)
-#                 if i==amazon_page_length:
-#                     amazon_price = '0'
-#                     print("amazon : No product found!")
-#                     print("-----------------------------")
-#                     break
-                    
-#         return amazon_price
-#     except:
-#         print("Amazon: No product found!")
-#         print("---------------------------------")
-#         amazon_price = '0'
-#     return amazon_price
+        conn.request("GET", f"/shopping?q={encoded_query}&gl=in&hl=en&autocorrect=true&num=10&page=1", headers=headers)
+        res = conn.getresponse()
+        data = res.read()
+       
 
-# def convert(a):
-#     b=a.replace(" ",'')
-#     c=b.replace("INR",'')
-#     d=c.replace(",",'')
-#     f=d.replace("₹",'')
-#     g=int(float(f))
-#     return g
+        ds = json.loads(data.decode("utf-8"))
+        if 'shopping' in ds and isinstance(ds['shopping'], list):
+            products = ds['shopping']  # List of products from API
+        else:
+            products = []  # Default to an empty list if no products are found
 
-# name=input("Product Name:\n")
-# flipkart_price=flipkart(name)
-# amazon_price=amazon(name)
+        # Simulate local products (replace with a query from your database)
+        local_products = [
+            {"title": "Local Product 1", "price": "₹1,500.00", "source": "Local Store"},
+            {"title": "Local Product 2", "price": "₹1,800.00", "source": "Local Vendor"}
+        ]
+
+        # Prepare context
+        context = {
+            'local_products': local_products,  # Local products from your database
+            'products': products,              # API products as a list
+        }
+
+    return render(request, "store/search_result.html", context)
 
 
-# if flipkart_price=='0':
-#     print("Flipkart: No product found!")
-#     flipkart_price = int(flipkart_price)
-# else:
-#     print("\nFlipkart Price:",flipkart_price)
-#     flipkart_price=convert(flipkart_price)
-# if amazon_price=='0':
-#     print("Amazon: No product found!")
-#     amazon_price = int(amazon_price)
-# else:
-#     print("\nAmazon price: ₹",amazon_price)
-#     amazon_price=convert(amazon_price)
+

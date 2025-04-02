@@ -53,8 +53,11 @@ $(document).ready(function() {
 
 
 
-
     
 }); 
 // jquery end
+function addToCompare(productId) {
+    // Add functionality to track or display compared products
+    console.log(`Added product ${productId} to compare list`);
+}
 
